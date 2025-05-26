@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Clasificador de Triángulos</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ml5@0.12.2/dist/ml5.min.js"></script>
+  <style>
+    body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #c3cedd;
+  color: #333;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 2em;
+  color: #4a4a4a;
+  margin-bottom: 30px;
+}
+
+#samples {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+#samples figure {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  cursor: default;
+  transition: border 0.3s ease;
+}
+
+#samples figure figcaption {
+  font-weight: bold;
+  font-size: 0.9em;
+  color: #555;
+}
+
+#samples figure.selected {
+  border-color: #6c63ff;
+  background-color: #f1f0ff;
+}
+
+#sketch-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+}
+
+#clear-btn {
+  margin-top: 12px;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: #6c63ff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+#clear-btn:hover {
+  background: #574df2;
+}
+
+#result {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Clasificador de Triángulos</h1>
+
+    <div id="samples">
+      <figure data-label="equilateral"><figcaption>Equilátero</figcaption></figure>
+      <figure data-label="isosceles"><figcaption>Isósceles</figcaption></figure>
+      <figure data-label="scalene"><figcaption>Escaleno</figcaption></figure>
+      <figure data-label="acute"><figcaption>Agudo</figcaption></figure>
+      <figure data-label="right"><figcaption>Rectángulo</figcaption></figure>
+      <figure data-label="obtuse"><figcaption>Obtusángulo</figcaption></figure>
+    </div>
+
+    <div id="sketch-wrapper">
+      <div id="sketch-holder"></div>
+      <button id="clear-btn">🧽 Limpiar lienzo</button>
+      <div id="result">✏️ Dibuja un triángulo para clasificar</div>
+    </div>
+  </div>
+
+  <script>
+    let classifier, inputImage, canvasElem;
+let hasDrawn = false;
+
+function setup() {
+  // Crear canvas principal
+  canvasElem = createCanvas(400, 400);
+  canvasElem.parent('sketch-holder');
+  background(255);
+
+  // Lienzo auxiliar de 64x64
+  inputImage = createGraphics(64, 64);
+
+  // Cargar el modelo entrenado
+  classifier = ml5.neuralNetwork({
+    inputs: [64, 64, 4],
+    task: 'imageClassification'
+  });
+
+  classifier.load({
+    model: 'model/model.json',
+    metadata: 'model/model_meta.json',
+    weights: 'model/model.weights.bin'
+  }, () => {
+    console.log("✅ Modelo cargado correctamente.");
+  });
+
+  // Botón para limpiar
+  document.getElementById('clear-btn')
+    .addEventListener('click', () => {
+      background(255);
+      hasDrawn = false;
+      document.getElementById('result').innerText = 'Dibuja un triángulo para clasificar';
+      document.querySelectorAll('#samples figure.selected')
+        .forEach(fig => fig.classList.remove('selected'));
+    });
+}
+
+function draw() {
+  if (mouseIsPressed) {
+    hasDrawn = true;
+    strokeWeight(8);
+    stroke(0);
+    line(mouseX, mouseY, pmouseX, pmouseY);
+  }
+}
+
+function mouseReleased() {
+  if (!hasDrawn || mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
+  classifyCanvas();
+}
+
+function classifyCanvas() {
+  inputImage.copy(canvasElem, 0, 0, 400, 400, 0, 0, 64, 64);
+  classifier.classify({ image: inputImage }, gotResult);
+}
+
+function gotResult(err, results) {
+  if (err) return console.error(err);
+  if (!hasDrawn || !results.length) return;
+
+  const label = results[0].label;
+  const confidence = Math.round(results[0].confidence * 100) + '%';
+
+  document.getElementById('result').innerText = `Resultado: ${label} – Confianza: ${confidence}`;
+
+  document.querySelectorAll('#samples figure.selected')
+    .forEach(fig => fig.classList.remove('selected'));
+
+  const sel = document.querySelector(`#samples figure[data-label="${label}"]`);
+  if (sel) sel.classList.add('selected');
+}
+
+  </script>
+</body>
+</html>

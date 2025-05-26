@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shape Classifier</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/addons/p5.dom.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <script src="sketch.js"></script>
+</head>
+<body>
+    <script>
+        let equilateral = [], isosceles = [], scalene = [];
+let acute = [], right = [], obtuse = [];
+let ShapeClassifier;
+
+function preload() {
+  for (let i = 0; i < 100; i++) {
+    let idx = nf(i + 1, 3, 0); // "001", "002", ..., "100"
+    equilateral[i] = loadImage(`data/equilateral${idx}.png`);
+    isosceles[i] = loadImage(`data/isosceles${idx}.png`);
+    scalene[i] = loadImage(`data/scalene${idx}.png`);
+    acute[i] = loadImage(`data/acute${idx}.png`);
+    right[i] = loadImage(`data/right${idx}.png`);
+    obtuse[i] = loadImage(`data/obtuse${idx}.png`);
+  }
+}
+
+function setup() {
+  noCanvas();
+
+  let options = {
+    inputs: [64, 64, 4], // RGBA
+    task: 'imageClassification',
+    debug: true
+  };
+
+  ShapeClassifier = ml5.neuralNetwork(options);
+
+  for (let i = 0; i < 100; i++) {
+    ShapeClassifier.addData({ image: equilateral[i] }, { label: 'equilateral' });
+    ShapeClassifier.addData({ image: isosceles[i] }, { label: 'isosceles' });
+    ShapeClassifier.addData({ image: scalene[i] }, { label: 'scalene' });
+    ShapeClassifier.addData({ image: acute[i] }, { label: 'acute' });
+    ShapeClassifier.addData({ image: right[i] }, { label: 'right' });
+    ShapeClassifier.addData({ image: obtuse[i] }, { label: 'obtuse' });
+  }
+
+  console.log("📊 Datos cargados. Normalizando...");
+  ShapeClassifier.normalizeData();
+  console.log("🚀 Entrenando modelo...");
+  ShapeClassifier.train({ epochs: 50 }, finishedTraining);
+}
+
+function finishedTraining() {
+  console.log("✅ Entrenamiento finalizado. Guardando modelo...");
+  ShapeClassifier.save(); // Guardará model.json, model.weights.bin y metadata.json
+}
+
+    </script>
+</body>
+</html>
