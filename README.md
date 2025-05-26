@@ -11,12 +11,6 @@ Este proyecto permite a los usuarios **dibujar un triángulo a mano alzada en un
 
 ---
 
-## 📸 Captura de pantalla
-
-![demo](images/demo.png) <!-- Opcional: añade una imagen de vista previa -->
-
----
-
 ## 🧠 Tecnologías utilizadas
 
 - [p5.js](https://p5js.org/) – para el dibujo en el lienzo
